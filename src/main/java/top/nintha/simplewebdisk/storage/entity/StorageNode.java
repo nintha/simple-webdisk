@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class StorageNode {
+    public static final String ROOT_NODE_ID = "ROOT";
     @Id
     private String id;
     private String name;
@@ -22,15 +23,15 @@ public class StorageNode {
     private LocalDateTime createTime;
     private LocalDateTime modifyTime;
 
-    public Boolean getFolderFlag(){
+    public Boolean getFolderFlag() {
         return fileFlag == null ? null : !fileFlag;
     }
 
-    public String getCreateTimeFormat(){
+    public String getCreateTimeFormat() {
         return createTime.toString();
     }
 
-    public String getModifyTimeFormat(){
+    public String getModifyTimeFormat() {
         return modifyTime.toString();
     }
 }

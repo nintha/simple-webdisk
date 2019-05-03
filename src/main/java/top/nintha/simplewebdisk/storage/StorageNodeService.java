@@ -50,12 +50,16 @@ public class StorageNodeService {
                 .modifyTime(LocalDateTime.now())
                 .build();
 
-        StorageNode saved = storageNodeDao.save(node);
+        StorageNode saved = storageNodeDao.insert(node);
         return saved.getId();
     }
 
     public List<StorageNode> findByParentId(String parentId) {
         return storageNodeDao.findByParentId(parentId);
+    }
+
+    public Optional<StorageNode> findById(String id) {
+        return storageNodeDao.findById(id);
     }
 
     public boolean deleteFile(String id) {
@@ -73,9 +77,34 @@ public class StorageNodeService {
                 .filter(node -> storageNodeDao.countByParentId(id) == 0)
                 .map(node -> {
                     storageNodeDao.deleteById(id);
-                    storageService.deleteByToken(node.getToken());
                     return true;
                 }).orElse(false);
+    }
+
+    /**
+     * 递归删除
+     *
+     * @param id
+     * @return
+     */
+    public boolean deleteNodeRecursive(String id) {
+        Optional<StorageNode> nodeOptional = storageNodeDao.findById(id);
+        return nodeOptional.map(it -> {
+            if (it.getFileFlag()) {
+                deleteFile(id);
+            } else {
+                long childNum = storageNodeDao.countByParentId(id);
+                if (childNum == 0) {
+                    deleteEmptyFolder(id);
+                } else {
+                    List<StorageNode> children = storageNodeDao.findByParentId(id);
+                    for (StorageNode child : children) {
+                        deleteNodeRecursive(child.getId());
+                    }
+                }
+            }
+            return true;
+        }).orElse(false);
     }
 
     public boolean moveNode(String childId, String targetParentId) {
@@ -85,9 +114,9 @@ public class StorageNodeService {
         }
 
         Optional<StorageNode> optional = storageNodeDao.findById(childId);
-        return optional.map(node -> {
-            if (targetParentId == null) {
-                node.setParentId(null);
+        boolean effect = optional.map(node -> {
+            if (StorageNode.ROOT_NODE_ID.equals(targetParentId)) {
+                node.setParentId(targetParentId);
                 node.setModifyTime(LocalDateTime.now());
                 storageNodeDao.save(node);
                 return true;
@@ -100,23 +129,29 @@ public class StorageNodeService {
                 }).orElse(false);
             }
         }).orElse(false);
+
+        log.info("[move] id={}, targetParentId={}, effect={}", childId, targetParentId, effect);
+        return effect;
     }
 
     public boolean checkRelation(String childId, String ancestorId) {
-        if (ancestorId == null && childId != null) {
+        if (StorageNode.ROOT_NODE_ID.equals(ancestorId) && !StorageNode.ROOT_NODE_ID.equals(childId)) {
             return true;
         }
-        List<StorageNode> allParentNodes = getAllParentNodes(childId);
+        List<StorageNode> allParentNodes = getAncestorNodes(childId);
         return allParentNodes.stream().map(StorageNode::getId).anyMatch(it -> it.equals(ancestorId));
     }
 
-    public List<StorageNode> getAllParentNodes(String id) {
+    /**
+     * 获取所有祖先节点
+     */
+    public List<StorageNode> getAncestorNodes(String id) {
         HashSet<String> idSet = Sets.newHashSet();
 
         ArrayList<StorageNode> list = Lists.newArrayList();
         Optional<StorageNode> optional = storageNodeDao.findById(id);
-        String parentId = optional.map(StorageNode::getParentId).orElse(null);
-        while (parentId != null) {
+        String parentId = optional.map(StorageNode::getParentId).orElse(StorageNode.ROOT_NODE_ID);
+        while (!StorageNode.ROOT_NODE_ID.equals(parentId)) {
             Optional<StorageNode> parentNode = storageNodeDao.findById(parentId);
             parentNode.ifPresent(p -> {
                 list.add(p);
@@ -126,9 +161,21 @@ public class StorageNodeService {
                 }
             });
 
-            parentId = parentNode.map(StorageNode::getParentId).orElse(null);
+            parentId = parentNode.map(StorageNode::getParentId).orElse(StorageNode.ROOT_NODE_ID);
         }
         return list;
+    }
+
+    public boolean renameNode(String id, String oldName, String newName) {
+        Optional<StorageNode> node = storageNodeDao.findByIdAndName(id, oldName);
+        boolean effect = node.map(n -> {
+            n.setName(newName);
+            n.setModifyTime(LocalDateTime.now());
+            storageNodeDao.save(n);
+            return true;
+        }).orElse(false);
+        log.info("[rename] id={}, {} -> {}, effect={}", id, oldName, newName, effect);
+        return effect;
     }
 
 }

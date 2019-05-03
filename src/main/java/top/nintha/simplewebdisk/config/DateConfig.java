@@ -33,7 +33,7 @@ public class DateConfig implements Converter<String, LocalDateTime> {
 
         @Override
         public void serialize(LocalDateTime value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            gen.writeNumber(value.atZone(ZoneOffset.systemDefault()).toEpochSecond());
+            gen.writeNumber(value.atZone(ZoneOffset.systemDefault()).toInstant().toEpochMilli() + "");
         }
     }
 
