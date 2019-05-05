@@ -12,7 +12,11 @@ public class BusinessException extends RuntimeException {
         this.message = message;
     }
 
-    public static BusinessException of(ExceptionType type){
+    public static BusinessException of(ExceptionType type) {
         return new BusinessException(type.getCode(), type.getMessage());
+    }
+
+    public static BusinessException of(ExceptionType type, String extraMessage) {
+        return new BusinessException(type.getCode(), type.getMessage() + ", " + extraMessage);
     }
 }

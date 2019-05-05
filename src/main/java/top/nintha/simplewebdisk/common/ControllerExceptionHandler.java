@@ -24,7 +24,7 @@ public class ControllerExceptionHandler {
     public Results BusinessExceptionHandler(BusinessException ex, HttpServletRequest req, HttpServletResponse res) {
         List<StackTraceElement> stackTraceElements = Arrays.asList(ex.getStackTrace());
         String stack = stackTraceElements
-                .subList(0, Math.min(stackTraceElements.size(), 10))
+                .subList(2, Math.min(stackTraceElements.size(), 7))
                 .stream()
                 .map(StackTraceElement::toString)
                 .collect(Collectors.joining("\n\t", "\n\t", "\n\t...omitted"));
@@ -38,6 +38,7 @@ public class ControllerExceptionHandler {
         }
         return Results.failed(ex.getCode(), ex.getMessage());
     }
+
 
     @ExceptionHandler({Exception.class})
     @ResponseStatus

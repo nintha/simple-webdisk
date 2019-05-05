@@ -1,10 +1,12 @@
 package top.nintha.simplewebdisk.common;
 
 public enum ExceptionType {
-    SYSTEM_EXCEPTION(1000, "system exception"),
-    ITEM_NOT_FOUND(1001, "item not found"),
-    UPLOAD_EXCEPTION(1002, "failed to upload"),
-    NODE_REF_LOOP_EXCEPTION(1002, "must not make node ref loop"),
+    SYSTEM_EXCEPTION(1000, "System exception"),
+    ITEM_NOT_FOUND(1001, "Item not found"),
+    UPLOAD_EXCEPTION(1002, "Failed to upload"),
+    NODE_REF_LOOP_EXCEPTION(1003, "Must not make node ref loop"),
+    UNLOGIN_EXCEPTION(1004, "Unauthorized access"),
+    PASSWORD_MISMATCH_EXCEPTION(1005, "Username or password mismatch"),
     ;
 
     private int code;
@@ -25,5 +27,9 @@ public enum ExceptionType {
 
     public BusinessException toException(){
         return BusinessException.of(this);
+    }
+
+    public BusinessException toException(String extraMessage){
+        return BusinessException.of(this, extraMessage);
     }
 }
